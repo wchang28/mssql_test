@@ -1,0 +1,17 @@
+{
+  "name": "mssql_test",
+  "version": "1.0.0",
+  "description": "MSSQL Test",
+  "main": "./js/app.js",
+  "scripts": {
+    "test": "node ./js/app.js"
+  },
+  "author": "Wen Chang",
+  "license": "MIT",
+  "dependencies": {
+    "@types/mssql": "^4.0.1",
+    "@types/node": "^7.0.16",
+    "msnodesqlv8": "^0.2.16",
+    "mssql": "^4.0.4"
+  }
+}
