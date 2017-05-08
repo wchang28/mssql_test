@@ -6,6 +6,10 @@ s.add("wen");
 s.add("juei");
 console.log(s.has("wen"));
 
+function promiseTest() : Promise<any> {
+    return Promise.resolve<any>(null);
+}
+
 /*
 let conn = new mssql.ConnectionPool({user: "wchang", password: "ts9ah7g5", server: "192.168.1.14", database: "master", connectionTimeout: 5000}, (err?: any) => {
     if (err)
