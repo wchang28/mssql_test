@@ -8,7 +8,9 @@
       "outDir": "./js",
       "watch": true,
       "lib": [
-        "es2017"
+        "es2017",
+        "dom",
+        "dom.iterable"
       ]
   },
   "files": [
