@@ -9,9 +9,9 @@
   "author": "Wen Chang",
   "license": "MIT",
   "dependencies": {
-    "@types/mssql": "^4.0.1",
+    "@types/mssql": "^4.0.4",
     "@types/node": "^7.0.16",
-    "msnodesqlv8": "^0.2.16",
+    "msnodesqlv8": "^0.3.1",
     "mssql": "^4.0.4"
   }
 }
