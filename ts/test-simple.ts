@@ -7,11 +7,10 @@ let password = process.env.password;
 console.log('server=' + server);
 console.log('user=' + user);
 console.log('password=' + password);
+console.log('');
 
-let sqlConfig: simple.config = {server, database: "TestDB", user, password};
-//let sqlConfig: simple.config = {server, database: "TestDB", options: {trustedConnection: true}};
-//let sqlConfig: simple.config = {server, database: "SFDC", options: {trustedConnection: true}};
-//let sqlConfig: simple.config = {server, database: "dfagnf", options: {trustedConnection: true}};
+//let sqlConfig: simple.config = {server, database: "TestDB", user, password};
+let sqlConfig: simple.config = {server, database: "TestDB", options: {trustedConnection: true}};
 
 let db:simple.ISimpleMSSQL = new simple.SimpleMSSQL(sqlConfig)
 db.on("connect", (connection: simple.ConnectionPool) => {
