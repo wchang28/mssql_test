@@ -25,7 +25,7 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
     private __connection: sql.ConnectionPool;
     private __options: Options;
     private static defaultOptions: Options = {reconnectIntervalMS: 3000};
-    private static NOT_CONNECTED_ERR  = {error: 'internal-server-error', error_description: 'not to connected to the database'};
+    private static NOT_CONNECTED_ERR  = {error: 'internal-server-error', error_description: 'not connected to the database'};
     constructor(private __sqlConfig: sql.config, options?: Options) {
         super();
         options = (options || SimpleMSSQL.defaultOptions)
@@ -36,9 +36,9 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
     get Options(): Options {return this.__options;}
     get Connection(): sql.ConnectionPool {return this.__connection;}
     get Connected(): boolean {return (this.Connection ? this.Connection.connected : false);}
-    private closeImpl() : void {
-        try {this.__connection.close();} catch(e) {}
+    private closeConnection() : Promise<void> {
         this.__connection = null;
+        return this.__connection.close();
     }
     private createPool(msnodesqlv8: boolean, config: sql.config) : sql.ConnectionPool {
         if (msnodesqlv8) {
@@ -48,16 +48,18 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
             return new sql.ConnectionPool(config);
     }
     private onConnectionError(err: any) : void {
-        this.closeImpl();
-        if (this.Options && typeof this.Options.reconnectIntervalMS === 'number' && this.Options.reconnectIntervalMS > 0) {
-            setTimeout(() => {
-                this.connect();
-            }, this.Options.reconnectIntervalMS);
-        }
         this.emit('error', err);
+        let cb = () => {
+            if (this.Options.reconnectIntervalMS > 0) {
+                setTimeout(() => {
+                    this.connect();
+                }, this.Options.reconnectIntervalMS);
+            }            
+        };
+        this.closeConnection().then(cb).catch(cb);
     }
     connect() : void {
-        if (!this.__connection) {
+        if (!this.Connected) {
             let msnodesqlv8 = (this.__sqlConfig.password ? false : true);
             this.__connection = this.createPool(msnodesqlv8, this.__sqlConfig);
             this.__connection.on("error", (err: any) => {
@@ -70,11 +72,19 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
             });
         }
     }
-    disconnect() : void {
-        if (!this.Connected) {
-            this.closeImpl();
-            this.emit('close');
-        }
+    disconnect() : Promise<void> {
+        if (this.Connected) {
+            return new Promise<void>((resolve: () => void, reject: (err: any) => void) => {
+                this.closeConnection()
+                .then(() => {
+                    this.emit('close');
+                    resolve();
+                }).catch((err: any) => {
+                    reject(err);
+                });
+            });
+        } else
+            return Promise.reject(SimpleMSSQL.NOT_CONNECTED_ERR);
     }
     query(sqlString:string, params?: any) : Promise<sql.IResult<any>> {
         if (!this.Connected)
