@@ -9,8 +9,8 @@ console.log('user=' + user);
 console.log('password=' + password);
 console.log('');
 
-//let sqlConfig: simple.config = {server, database: "TestDB", user, password};
-let sqlConfig: simple.config = {server, database: "TestDB", options: {trustedConnection: true}};
+let sqlConfig: simple.config = {server, database: "TestDB", user, password};
+//let sqlConfig: simple.config = {server, database: "TestDB", options: {trustedConnection: true}};
 
 let db:simple.ISimpleMSSQL = new simple.SimpleMSSQL(sqlConfig)
 console.log("msnodesqlv8=" + db.msnodesqlv8);
