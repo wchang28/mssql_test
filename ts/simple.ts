@@ -10,6 +10,7 @@ export interface ISimpleMSSQL {
     readonly Options: Options;
     readonly Connection: sql.ConnectionPool;
     readonly Connected: boolean;
+    readonly Connecting: boolean;
     readonly msnodesqlv8: boolean;
     connect(): void;
     disconnect() : void;
@@ -38,6 +39,7 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
     get Options(): Options {return this.__options;}
     get Connection(): sql.ConnectionPool {return this.__connection;}
     get Connected(): boolean {return (this.Connection ? this.Connection.connected : false);}
+    get Connecting(): boolean {return (this.Connection ? this.Connection.connecting : false);}
     private closeConnection() : Promise<void> {
         return new Promise<void>((resolve: () => void, reject: (err: any) => void) => {
             this.__connection.close()
