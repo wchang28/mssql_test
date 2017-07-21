@@ -14,6 +14,7 @@
       ]
   },
   "files": [
-    "./ts/app.ts"
+    "./ts/app.ts",
+    "./ts/test-simple.ts"
   ]
 }
