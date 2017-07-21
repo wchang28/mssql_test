@@ -1,5 +1,14 @@
 import * as sql from "mssql";
 
+let server = process.env.server;
+let user = process.env.user;
+let password = process.env.password;
+
+console.log('server=' + server);
+console.log('user=' + user);
+console.log('password=' + password);
+console.log('');
+
 function createPool(msnodesqlv8: boolean, config: sql.config) : sql.ConnectionPool {
     if (msnodesqlv8) {
         let nsql = require("mssql/msnodesqlv8");
@@ -8,8 +17,8 @@ function createPool(msnodesqlv8: boolean, config: sql.config) : sql.ConnectionPo
         return new sql.ConnectionPool(config);
 }
 
-let conn = createPool(false, {server: "DESKTOP-0LO8NI0", database: "TestDB", user: "wchang", password: "ts9ah7g5"});
-//let conn = createPool(true, {server: "DESKTOP-0LO8NI0", database: "TestDB", options: {trustedConnection: true}});
+let conn = createPool(false, {server, database: "TestDB", user, password});
+//let conn = createPool(true, {server, database: "TestDB", options: {trustedConnection: true}});
 
 /*
 conn.on("error", (err: any) => {
