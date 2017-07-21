@@ -37,8 +37,16 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
     get Connection(): sql.ConnectionPool {return this.__connection;}
     get Connected(): boolean {return (this.Connection ? this.Connection.connected : false);}
     private closeConnection() : Promise<void> {
-        this.__connection = null;
-        return this.__connection.close();
+        return new Promise<void>((resolve: () => void, reject: (err: any) => void) => {
+            this.__connection.close()
+            .then(() => {
+                this.__connection = null;
+                resolve();
+            }).catch((err: any) => {
+                this.__connection = null;
+                reject(err);
+            });
+        });
     }
     private createPool(msnodesqlv8: boolean, config: sql.config) : sql.ConnectionPool {
         if (msnodesqlv8) {
@@ -73,17 +81,9 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
         }
     }
     disconnect() : Promise<void> {
-        if (this.Connected) {
-            return new Promise<void>((resolve: () => void, reject: (err: any) => void) => {
-                this.closeConnection()
-                .then(() => {
-                    this.emit('close');
-                    resolve();
-                }).catch((err: any) => {
-                    reject(err);
-                });
-            });
-        } else
+        if (this.Connected)
+            return this.closeConnection().then(() => {this.emit('close');});
+        else
             return Promise.reject(SimpleMSSQL.NOT_CONNECTED_ERR);
     }
     query(sqlString:string, params?: any) : Promise<sql.IResult<any>> {
