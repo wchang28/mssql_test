@@ -14,6 +14,23 @@ let sqlConfig: simple.config = {server, database: "TestDB", user, password};
 
 let db:simple.ISimpleMSSQL = new simple.SimpleMSSQL(sqlConfig)
 console.log("msnodesqlv8=" + db.msnodesqlv8);
+
+let TimeoutFunction = () => {
+    if (db.Connected) {
+        db.Connection.request().query("SELECT [value]=1")
+        .then((value: simple.IResult<any>) => {
+            console.log(new Date().toISOString() + ": query good");
+            setTimeout(TimeoutFunction, 3000);
+        }).catch((err: any) => {
+            console.error(new Date().toISOString() + ": !!! query error");
+            setTimeout(TimeoutFunction, 3000);
+        });
+    } else
+        setTimeout(TimeoutFunction, 3000);
+}
+
+TimeoutFunction();
+
 db.on("connect", (connection: simple.ConnectionPool) => {
     console.log("connected to the database :-)");
     connection.request().query("SELECT [value]=getdate()")
