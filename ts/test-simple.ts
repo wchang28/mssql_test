@@ -15,7 +15,15 @@ let sqlConfig: simple.config = {server, database: "TestDB", user, password};
 let db:simple.ISimpleMSSQL = new simple.SimpleMSSQL(sqlConfig)
 console.log("msnodesqlv8=" + db.msnodesqlv8);
 
-let Pooling : () => Promise<void> = () => {
+function getStart(pollingFunction: () => Promise<void>, intervalMS: number) : () => void {
+    let onTimeout = () => {
+        let onPollingDone = () => {setTimeout(onTimeout, intervalMS);};
+        pollingFunction().then(onPollingDone).catch(onPollingDone);
+    }
+    return onTimeout;
+}
+
+let pollingFunc : () => Promise<void> = () => {
     return new Promise<void>((resolve: () => void, reject: (err: any) => void) => {
         if (db.Connected) {
             console.log("<<CONNECTED>>");
@@ -34,15 +42,7 @@ let Pooling : () => Promise<void> = () => {
     });
 }
 
-function geStart(Pooling: () => Promise<void>, intervalMS: number) : () => void {
-    let timeoutHandler = () => {
-        let cb = () => {setTimeout(timeoutHandler, intervalMS);};
-        Pooling().then(cb).catch(cb);
-    }
-    return timeoutHandler;
-}
-
-let start = geStart(Pooling, 3000);
+let start = getStart(pollingFunc, 3000);
 start();
 
 db.on("connect", (connection: simple.ConnectionPool) => {
