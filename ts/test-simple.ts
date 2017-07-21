@@ -15,15 +15,18 @@ let sqlConfig: simple.config = {server, database: "TestDB", user, password};
 let db:simple.ISimpleMSSQL = new simple.SimpleMSSQL(sqlConfig)
 console.log("msnodesqlv8=" + db.msnodesqlv8);
 
-function getStart(pollingFunction: () => Promise<void>, intervalMS: number) : () => void {
-    let onTimeout = () => {
-        let onPollingDone = () => {setTimeout(onTimeout, intervalMS);};
-        pollingFunction().then(onPollingDone).catch(onPollingDone);
+type StartPollingFunction = () => void;
+type PollingFunction = () => Promise<void>;
+
+function getStart(poll: PollingFunction, intervalMS: number) : StartPollingFunction {
+    let doPolling = () => {
+        let onPollingDone = () => {setTimeout(doPolling, intervalMS);};
+        poll().then(onPollingDone).catch(onPollingDone);
     }
-    return onTimeout;
+    return doPolling;
 }
 
-let pollingFunc : () => Promise<void> = () => {
+let pollingFunc: PollingFunction = () => {
     return new Promise<void>((resolve: () => void, reject: (err: any) => void) => {
         if (db.Connected) {
             console.log("<<CONNECTED>>");
