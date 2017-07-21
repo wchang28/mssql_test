@@ -1,8 +1,17 @@
 import * as simple from "./simple";
 
-//let sqlConfig: simple.config = {server: "DESKTOP-0LO8NI0", database: "TestDB", user: "wchang", password: "ts9ah7g5"};
-//let sqlConfig: simple.config = {server: "DESKTOP-0LO8NI0", database: "TestDB", options: {trustedConnection: true}};
-let sqlConfig: simple.config = {server: "AWS-PRD-SQL01", database: "SFDC", options: {trustedConnection: true}};
+let server = process.env.server;
+let user = process.env.user;
+let password = process.env.password;
+
+console.log('server=' + server);
+console.log('user=' + user);
+console.log('password=' + password);
+
+let sqlConfig: simple.config = {server, database: "TestDB", user, password};
+//let sqlConfig: simple.config = {server, database: "TestDB", options: {trustedConnection: true}};
+//let sqlConfig: simple.config = {server, database: "SFDC", options: {trustedConnection: true}};
+//let sqlConfig: simple.config = {server, database: "dfagnf", options: {trustedConnection: true}};
 
 let db:simple.ISimpleMSSQL = new simple.SimpleMSSQL(sqlConfig)
 db.on("connect", (connection: simple.ConnectionPool) => {
