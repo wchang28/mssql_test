@@ -1,3 +1,8 @@
+import * as express from 'express';
+import {IWebServerConfig, startServer} from 'express-web-server';
+import * as bodyParser from "body-parser";
+import noCache = require('no-cache-express');
+import * as prettyPrinter from 'express-pretty-print';
 import * as simple from "./simple";
 
 let server = process.env.server;
@@ -57,6 +62,14 @@ let pollingFunc: PollingFunction = () => {
 let start = getStart(pollingFunc, 3000);
 //start();
 
+let app = express();
+
+app.set('jsonp callback name', 'cb');
+
+app.use(noCache);
+app.use(bodyParser.json({"limit":"999mb"}));
+app.use(prettyPrinter.get());
+
 db.on("connect", (connection: simple.ConnectionPool) => {
     console.log("connected to the database :-)");
     connection.request().query("SELECT [value]=getdate()")
@@ -76,3 +89,20 @@ db.on("connect", (connection: simple.ConnectionPool) => {
 }).on("connect-req", () => {
     console.log("<<connect-req>>");
 }).connect();
+
+app.get("/test", (req: express.Request, res: express.Response) => {
+    db.Connection.request().query("SELECT [value]=1")
+    .then((value: simple.IResult<any>) => {
+        console.log(new Date().toISOString() + ": query good");
+    }).catch((err: any) => {
+        console.error(new Date().toISOString() + ": !!! query error");
+    });
+});
+
+startServer({http:{port: 8080, host: "127.0.0.1"}}, app, (secure:boolean, host:string, port:number) => {
+    let protocol = (secure ? 'https' : 'http');
+    console.log(new Date().toISOString() + ': server listening at %s://%s:%s', protocol, host, port);
+}, (err:any) => {
+    console.error(new Date().toISOString() + ': !!! server error: ' + JSON.stringify(err));
+    process.exit(1);
+});
