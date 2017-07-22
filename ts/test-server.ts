@@ -36,33 +36,34 @@ getConnectRetry(pool, 5000)
     console.log("connecting...");
 }).on("connected", (pool: sql.ConnectionPool) => {
     console.log("connected :-)");
+
+    let app = express();
+
+    app.set('jsonp callback name', 'cb');
+
+    app.use(noCache);
+    app.use(bodyParser.json({"limit":"999mb"}));
+    app.use(prettyPrinter.get());
+
+    app.get("/test", (req: express.Request, res: express.Response) => {
+        pool.request().query("SELECT [value]=1")
+        .then((value: sql.IResult<any>) => {
+            console.log(new Date().toISOString() + ": query good");
+            res.jsonp({msg: "query GOOD :-)"});
+        }).catch((err: any) => {
+            console.error(new Date().toISOString() + ": !!! query error");
+            res.jsonp({msg: "query BAD :-(, err=" + JSON.stringify(err)});
+        });
+    });
+
+    startServer({http:{port: 8080, host: "127.0.0.1"}}, app, (secure:boolean, host:string, port:number) => {
+        let protocol = (secure ? 'https' : 'http');
+        console.log(new Date().toISOString() + ': server listening at %s://%s:%s', protocol, host, port);
+    }, (err:any) => {
+        console.error(new Date().toISOString() + ': !!! server error: ' + JSON.stringify(err));
+        process.exit(1);
+    });
+
 }).on("error", (err: any) => {
     console.error("!!! connect error: " + JSON.stringify(err));
 }).start();
-
-let app = express();
-
-app.set('jsonp callback name', 'cb');
-
-app.use(noCache);
-app.use(bodyParser.json({"limit":"999mb"}));
-app.use(prettyPrinter.get());
-
-app.get("/test", (req: express.Request, res: express.Response) => {
-    pool.request().query("SELECT [value]=1")
-    .then((value: sql.IResult<any>) => {
-        console.log(new Date().toISOString() + ": query good");
-        res.jsonp({msg: "query GOOD :-)"});
-    }).catch((err: any) => {
-        console.error(new Date().toISOString() + ": !!! query error");
-        res.jsonp({msg: "query BAD :-(, err=" + JSON.stringify(err)});
-    });
-});
-
-startServer({http:{port: 8080, host: "127.0.0.1"}}, app, (secure:boolean, host:string, port:number) => {
-    let protocol = (secure ? 'https' : 'http');
-    console.log(new Date().toISOString() + ': server listening at %s://%s:%s', protocol, host, port);
-}, (err:any) => {
-    console.error(new Date().toISOString() + ': !!! server error: ' + JSON.stringify(err));
-    process.exit(1);
-});
