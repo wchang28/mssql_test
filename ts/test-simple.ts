@@ -91,11 +91,13 @@ db.on("connect", (connection: simple.ConnectionPool) => {
 }).connect();
 
 app.get("/test", (req: express.Request, res: express.Response) => {
-    db.Connection.request().query("SELECT [value]=1")
+    db.query("SELECT [value]=1")
     .then((value: simple.IResult<any>) => {
         console.log(new Date().toISOString() + ": query good");
+        res.jsonp({msg: "query GOOD :-)"});
     }).catch((err: any) => {
         console.error(new Date().toISOString() + ": !!! query error");
+        res.jsonp({msg: "query BAD :-(, err=" + JSON.stringify(err)});
     });
 });
 
