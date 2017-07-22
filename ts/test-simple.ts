@@ -17,7 +17,7 @@ console.log('');
 let sqlConfig: simple.config = {server, database: "TestDB", user, password};
 //let sqlConfig: simple.config = {server, database: "TestDB", options: {trustedConnection: true}};
 
-let db:simple.ISimpleMSSQL = new simple.SimpleMSSQL(sqlConfig, {reconnectIntervalMS: 10000})
+let db:simple.ISimpleMSSQL = new simple.SimpleMSSQL(sqlConfig, {reconnectIntervalMS: 3000})
 console.log("msnodesqlv8=" + db.msnodesqlv8);
 
 type StartPollingFunction = () => void;
