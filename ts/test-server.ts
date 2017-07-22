@@ -4,7 +4,7 @@ import * as bodyParser from "body-parser";
 import noCache = require('no-cache-express');
 import * as prettyPrinter from 'express-pretty-print';
 import * as sql from "mssql";
-import {get as getConnectRetry} from "./mssql-connect-retry";
+import {get as getConnectRetry} from "./connect-retry";
 
 let server = process.env.server;
 let user = process.env.user;
