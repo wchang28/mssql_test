@@ -12,7 +12,7 @@ console.log('');
 let sqlConfig: simple.config = {server, database: "TestDB", user, password};
 //let sqlConfig: simple.config = {server, database: "TestDB", options: {trustedConnection: true}};
 
-let db:simple.ISimpleMSSQL = new simple.SimpleMSSQL(sqlConfig)
+let db:simple.ISimpleMSSQL = new simple.SimpleMSSQL(sqlConfig, {reconnectIntervalMS: 10000})
 console.log("msnodesqlv8=" + db.msnodesqlv8);
 
 type StartPollingFunction = () => void;
@@ -29,7 +29,7 @@ function getStart(poll: PollingFunction, intervalMS: number) : StartPollingFunct
 let pollingFunc: PollingFunction = () => {
     return new Promise<void>((resolve: () => void, reject: (err: any) => void) => {
         if (db.Connected) {
-            console.log("<<CONNECTED>>");
+            //console.log("<<CONNECTED>>");
             db.Connection.request().query("SELECT [value]=1")
             .then((value: simple.IResult<any>) => {
                 console.log(new Date().toISOString() + ": query good");
@@ -39,7 +39,7 @@ let pollingFunc: PollingFunction = () => {
                 resolve();
             });
         } else {
-            console.log("<<NOT-CONNECTED>>");
+            //console.log("<<NOT-CONNECTED>>");
             resolve();
         }
     });
@@ -61,5 +61,9 @@ db.on("connect", (connection: simple.ConnectionPool) => {
 }).on("error", (err: any) => {
     console.error("!!! DB error: " + JSON.stringify(err));
 }).on("close", () => {
-    console.log("close event fired");
+    console.log("<<CLOSE>>");
+}).on("change", (state: simple.State) => {
+    console.log("<<" + state + ">>");
+}).on("connect-req", () => {
+    console.log("<<connect-req>>");
 })
