@@ -62,8 +62,8 @@ db.on("connect", (connection: simple.ConnectionPool) => {
     console.error("!!! DB error: " + JSON.stringify(err));
 }).on("close", () => {
     console.log("<<CLOSE>>");
-}).on("change", (state: simple.State) => {
-    console.log("<<" + state + ">>");
+}).on("change", (newState: simple.State, oldState: simple.State) => {
+    console.log("change: <<" + oldState + " ===> " + newState + ">>");
 }).on("connect-req", () => {
     console.log("<<connect-req>>");
 })
