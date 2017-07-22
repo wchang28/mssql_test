@@ -20,7 +20,9 @@ type PollingFunction = () => Promise<void>;
 
 function getStart(poll: PollingFunction, intervalMS: number) : StartPollingFunction {
     let doPolling = () => {
-        let onPollingDone = () => {setTimeout(doPolling, intervalMS);};
+        let onPollingDone = () => {
+            setTimeout(doPolling, intervalMS);
+        };
         poll().then(onPollingDone).catch(onPollingDone);
     }
     return doPolling;
@@ -28,25 +30,32 @@ function getStart(poll: PollingFunction, intervalMS: number) : StartPollingFunct
 
 let pollingFunc: PollingFunction = () => {
     return new Promise<void>((resolve: () => void, reject: (err: any) => void) => {
+        console.log("<POLL>");
+        let timer = setTimeout(() => {
+            reject({error: "timeout"});
+        }, 5000);
         if (db.Connected) {
             //console.log("<<CONNECTED>>");
             db.Connection.request().query("SELECT [value]=1")
             .then((value: simple.IResult<any>) => {
+                clearTimeout(timer);
                 console.log(new Date().toISOString() + ": query good");
                 resolve();
             }).catch((err: any) => {
+                clearTimeout(timer);
                 console.error(new Date().toISOString() + ": !!! query error");
                 resolve();
             });
         } else {
             //console.log("<<NOT-CONNECTED>>");
+            clearTimeout(timer);
             resolve();
         }
     });
 }
 
 let start = getStart(pollingFunc, 3000);
-start();
+//start();
 
 db.on("connect", (connection: simple.ConnectionPool) => {
     console.log("connected to the database :-)");
@@ -66,4 +75,4 @@ db.on("connect", (connection: simple.ConnectionPool) => {
     console.log("change: <<" + oldState + " ===> " + newState + ">>");
 }).on("connect-req", () => {
     console.log("<<connect-req>>");
-})
+}).connect();
