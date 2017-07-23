@@ -15,6 +15,7 @@
     "@types/mssql": "^4.0.4",
     "@types/node": "^7.0.16",
     "body-parser": "^1.17.2",
+    "connect-retry": "https://github.com/wchang28/connect-retry.git",
     "express": "^4.15.3",
     "express-pretty-print": "https://github.com/wchang28/express-pretty-print.git",
     "express-web-server": "https://github.com/wchang28/express-web-server.git",

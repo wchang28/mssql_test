@@ -1,6 +1,7 @@
 import * as sql from 'mssql';
 import * as events from 'events';
 import * as _ from 'lodash';
+import {get as getConnectRetry, IConnectRetry} from "connect-retry";
 
 export interface Options {
     reconnectIntervalMS?: number
@@ -21,26 +22,38 @@ export interface ISimpleMSSQL {
     execute(storedProc:string, params?: any) : Promise<sql.IProcedureResult<any>>;
 
     on(event: "change", listener: (newSttate: State, oldState: State) => void) : this;
+    on(event: "connecting", listener: (connection: sql.ConnectionPool) => void) : this;
     on(event: "connect", listener: (connection: sql.ConnectionPool) => void) : this;
     on(event: "error", listener: (err: any) => void) : this;
     on(event: "close", listener: () => void) : this;
-    on(event: "connect-req", listener: () => void) : this;
 }
 
 export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
     private __state: State; 
     private __connection: sql.ConnectionPool;
     private __options: Options;
+    private __connectRetry: IConnectRetry<sql.ConnectionPool>;
     private static defaultOptions: Options = {reconnectIntervalMS: 3000};
-    private __connectReq: any;
     private static NOT_CONNECTED_ERR  = {error: 'internal-server-error', error_description: 'not connected to the database'};
     constructor(private __sqlConfig: sql.config, options?: Options) {
         super();
         options = (options || SimpleMSSQL.defaultOptions)
         this.__options = _.assignIn({}, SimpleMSSQL.defaultOptions, options);
         this.__state = "not-connected";
-        this.__connection = null;
-        this.__connectReq = null;
+        this.__connection = this.createPool(this.msnodesqlv8, this.__sqlConfig);
+        this.__connection.on("error", (err: any) => {
+            this.emit("error", err);
+        });
+        this.__connectRetry = getConnectRetry(this.__connection, this.__options.reconnectIntervalMS);
+        this.__connectRetry.on("connecting", () => {
+            this.setState("connecting");
+            this.emit("connecting");
+        }).on("connected", (pool: sql.ConnectionPool) => {
+            this.setState("connected");
+            this.emit("connect", pool);
+        }).on("error", (err: any) => {
+            this.emit("error", err);
+        });
     }
     get msnodesqlv8(): boolean {return (!this.__sqlConfig.user || !this.__sqlConfig.password ? true : false);}
     get Options(): Options {return this.__options;}
@@ -52,56 +65,9 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
         if (this.__state !== newState) {
             this.__state = newState;
             this.emit("change", newState, oldState);
-            if (this.State === "not-connected")
-                this.connectIfNecessary();
         }
     }
-
-    private requestToConnect() : boolean {  // request to start the connect sequence
-        if (this.State === "not-connected" || this.State === "disconnecting") {
-            if (!this.__connectReq) {
-                this.__connectReq = {};
-                this.emit("connect-req");
-                this.connectIfNecessary();
-                return true;
-            }
-        }
-        return false;
-    }
-    private getConnectRequest() : any {
-        if (this.__connectReq) {
-            let req = this.__connectReq;
-            this.__connectReq = null;
-            return req;
-        } else
-            return null;
-    }
-    private connectIfNecessary() {
-        let connectReq: any = null;
-        if (this.State === "not-connected" && (connectReq = this.getConnectRequest()) != null) {
-            this.setState("connecting");
-            this.__connection = this.createPool(this.msnodesqlv8, this.__sqlConfig);
-            this.__connection.on("error", (err: any) => {
-                // connection is alreay closed at this time no need to call close()
-                this.emit('error', err);
-                //console.error("<ON-ERROR>: " +  JSON.stringify(err));
-                if (this.State !== "connecting" && this.State !== "disconnecting") {
-                    if (this.__connection != null) this.__connection = null;
-                    this.setState("not-connected");
-                    setTimeout(() => {this.requestToConnect();}, this.Options.reconnectIntervalMS);
-                }
-            }).connect()
-            .then((connection: sql.ConnectionPool) => {
-                this.setState("connected");
-                this.emit('connect', connection);
-            }).catch((err: any) => {
-                this.emit('error', err);
-                //console.error("<CONNECT-ERROR>: " +  JSON.stringify(err));
-                if (this.State !== "disconnecting") this.closeConnection(true).then(() => {}).catch((err: any) => {});
-            });
-        }
-    }
-    private closeConnection(tryReconnect: boolean) : Promise<void> {
+    private closeConnection() : Promise<void> {
         return new Promise<void>((resolve: () => void, reject: (err: any) => void) => {
             this.setState("disconnecting");
             this.__connection.close()
@@ -110,14 +76,12 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
                 this.__connection = null;
                 this.setState("not-connected");
                 this.emit("close");
-                if (tryReconnect) setTimeout(() => {this.requestToConnect();}, this.Options.reconnectIntervalMS);
                 resolve();
             }).catch((err: any) => {
                 //console.error("!!! connection.close() failed !!! err=" + err.toString());
                 this.__connection = null;
                 this.setState("not-connected");
                 this.emit("close");
-                if (tryReconnect) setTimeout(() => {this.requestToConnect();}, this.Options.reconnectIntervalMS);
                 reject(err);
             });
         });
@@ -153,12 +117,15 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
             return request.execute(storedProc);       
         }
     }
-    connect() {this.requestToConnect();}
+    connect() {
+        if (this.State === "not-connected")
+            this.__connectRetry.start();
+    }
     disconnect() : Promise<void> {
         if (!this.Connected)
             return Promise.reject(SimpleMSSQL.NOT_CONNECTED_ERR);
         else
-            return this.closeConnection(false);
+            return this.closeConnection();
     }
 }
 
