@@ -15,6 +15,7 @@ export interface ISimpleMSSQL {
     readonly State: State;
     readonly msnodesqlv8: boolean;
     readonly Connected: boolean;
+    readonly Connecting: boolean;
 
     connect(): void;
     disconnect(): Promise<void>;
@@ -60,6 +61,7 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
     get Connection(): sql.ConnectionPool {return this.__connection;}
     get State(): State {return this.__state;}
     get Connected(): boolean {return this.State === "connected";}
+    get Connecting(): boolean {return this.State === "connecting";}
     private setState(newState: State) {
         let oldState = this.__state;
         if (this.__state !== newState) {
@@ -130,3 +132,5 @@ export class SimpleMSSQL extends events.EventEmitter implements ISimpleMSSQL {
 }
 
 export * from 'mssql';
+
+export function get(sqlConfig: sql.config, options?: Options) : ISimpleMSSQL {return new SimpleMSSQL(sqlConfig, options);}
