@@ -3,7 +3,7 @@ import {IWebServerConfig, startServer} from 'express-web-server';
 import * as bodyParser from "body-parser";
 import noCache = require('no-cache-express');
 import * as prettyPrinter from 'express-pretty-print';
-import * as simple from "./simple";
+import * as sql from "simple-mssql";
 
 let server = process.env.server;
 let user = process.env.user;
@@ -14,10 +14,10 @@ console.log('user=' + user);
 console.log('password=' + password);
 console.log('');
 
-let sqlConfig: simple.config = {server, database: "TestDB", user, password};
+let sqlConfig: sql.config = {server, database: "TestDB", user, password};
 //let sqlConfig: simple.config = {server, database: "TestDB", options: {trustedConnection: true}};
 
-let db = simple.get(sqlConfig, {reconnectIntervalMS: 3000})
+let db = sql.get(sqlConfig, {reconnectIntervalMS: 3000})
 console.log("msnodesqlv8=" + db.msnodesqlv8);
 
 let app = express();
@@ -28,10 +28,10 @@ app.use(noCache);
 app.use(bodyParser.json({"limit":"999mb"}));
 app.use(prettyPrinter.get());
 
-db.on("connect", (connection: simple.ConnectionPool) => {
+db.on("connect", (connection: sql.ConnectionPool) => {
     console.log("connected to the database :-)");
     connection.request().query("SELECT [value]=getdate()")
-    .then((value: simple.IResult<any>) => {
+    .then((value: sql.IResult<any>) => {
         console.log(JSON.stringify(value, null, 2));
         //db.disconnect();
     }).catch((err: any) => {
@@ -42,7 +42,7 @@ db.on("connect", (connection: simple.ConnectionPool) => {
     console.error("!!! DB error: " + JSON.stringify(err));
 }).on("close", () => {
     console.log("<<CLOSE>>");
-}).on("change", (newState: simple.State, oldState: simple.State) => {
+}).on("change", (newState: sql.State, oldState: sql.State) => {
     console.log("change: <<" + oldState + " ===> " + newState + ">>");
 }).on("connecting", () => {
     console.error("connecting...");
@@ -50,7 +50,7 @@ db.on("connect", (connection: simple.ConnectionPool) => {
 
 app.get("/test", (req: express.Request, res: express.Response) => {
     db.query("SELECT [value]=1")
-    .then((value: simple.IResult<any>) => {
+    .then((value: sql.IResult<any>) => {
         console.log(new Date().toISOString() + ": query good");
         res.jsonp({msg: "query GOOD :-)"});
     }).catch((err: any) => {
