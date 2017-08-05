@@ -48,6 +48,7 @@ db.on("connect", (connection: sql.ConnectionPool) => {
     console.error("connecting...");
 }).connect();
 
+// /test?value={value}
 app.get("/test", (req: express.Request, res: express.Response) => {
     db.query("SELECT [value]=@value", {"value": req.query["value"] ? req.query["value"] : null})
     .then((value: sql.IResult<any>) => {
