@@ -1,4 +1,4 @@
-// adde some comment here
+// This is a mssql test app
 import * as sql from "mssql";
 
 let server = process.env.server;
