@@ -1,4 +1,5 @@
 // This is a mssql test app
+// set the follwing evn vars: server, user, password
 import * as sql from "mssql";
 
 let server = process.env.server;
